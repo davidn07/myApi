@@ -6,6 +6,10 @@ const router = express.Router();
 
 dotenv.config();
 
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+const client = require("twilio")(accountSid, authToken);
+
 require("../db/conn");
 const User = require("../model/userSchema");
 const Request = require("../model/requestSchema");
@@ -121,6 +125,40 @@ router.get("/requests", authenticateToken, async (req, res) => {
     res.status(201).json({ prayerRequests });
   } catch (err) {
     console.log(err);
+  }
+});
+
+router.post("/send-code", async (req, res) => {
+  const { phone_number } = req.body;
+  try {
+    const status = await client.verify
+      .services(process.env.TWILIO_SERVICE_SID)
+      .verifications.create({ to: `+${phone_number}`, channel: "sms" });
+
+    if (status) {
+      res
+        .status(201)
+        .json({ message: "OTP sent to the mobile number successfully!" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post("/verify-code", async (req, res) => {
+  const { phone_number, code } = req.body;
+  try {
+    const status = await client.verify
+      .services(process.env.TWILIO_SERVICE_SID)
+      .verificationChecks.create({ to: `+${phone_number}`, code });
+
+    if (status.status === "approved") {
+      res.status(201).json({ message: "Verification successfull" });
+    } else {
+      res.status(401).json({ error: "Incorrect OTP" });
+    }
+  } catch (error) {
+    console.log(error);
   }
 });
 
