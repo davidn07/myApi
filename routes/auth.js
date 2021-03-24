@@ -155,7 +155,7 @@ router.post("/verify-code", async (req, res) => {
     if (status.status === "approved") {
       res.status(201).json({ message: "Verification successfull" });
     } else {
-      res.status(401).json({ error: "Incorrect OTP" });
+      res.status(401).json({ error: "Incorrect OTP!" });
     }
   } catch (error) {
     console.log(error);
