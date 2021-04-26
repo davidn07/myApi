@@ -5,10 +5,7 @@ const requestSchema = new mongoose.Schema({
   prayer_request: {
     type: String,
     required: true,
-  },
-  message: {
-    type: String,
-    required: true,
+    expires: 604800,
   },
   date: {
     type: Date,

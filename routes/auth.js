@@ -35,14 +35,14 @@ router.post("/register", async (req, res) => {
   const { first_name, last_name, email, phone_number, password } = req.body;
 
   if (!first_name || !last_name || !email || !phone_number || !password) {
-    return res.status(422).json({ error: "Please fill all the fields" });
+    return res.json({ error: "Please fill all the fields" });
   }
 
   try {
     const userExist = await User.findOne({ email: email });
 
     if (userExist) {
-      return res.status(422).json({ error: "User already exists" });
+      return res.status(400).json({ error: "User already exists" });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -67,7 +67,7 @@ router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
     if (!email || !password) {
-      res.status(422).json({ error: "Please fill the data" });
+      res.status(400).json({ error: "Please fill the data" });
     }
 
     const user = await User.findOne({ email: email });
@@ -78,28 +78,27 @@ router.post("/login", async (req, res) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      res.status(404).json({ error: "password does not match" });
+      res.status(401).json({ error: "password does not match" });
     }
 
     const token = jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
 
-    res.status(201).json({ token });
+    res.status(201).json({ token, message: "User LogIn Successful" });
   } catch (error) {
     console.log(error);
   }
 });
 
 router.post("/requests", authenticateToken, async (req, res) => {
-  const { prayer_request, message } = req.body;
+  const { prayer_request } = req.body;
 
-  if (!prayer_request || !message) {
+  if (!prayer_request) {
     return res.status(422).json({ error: "Please fill all the fields" });
   }
 
   try {
     const request = new Request({
       prayer_request,
-      message,
       first_name: req.user.first_name,
       last_name: req.user.last_name,
       phone_number: req.user.phone_number,
@@ -111,6 +110,40 @@ router.post("/requests", authenticateToken, async (req, res) => {
     res
       .status(201)
       .json({ message: "Prayer request added successfully", prayerRequest });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.get("/get-user", authenticateToken, async (req, res) => {
+  try {
+    const user = await User.findOne({ _id: req.user._id });
+    if (!user) {
+      res.status(400).json({ error: "User not found" });
+    }
+
+    res.status(201).json({ user: user });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.post("/verify-user", async (req, res) => {
+  try {
+    const { email } = req.body;
+    const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    const isEmail = emailRegexp.test(email);
+
+    if (!isEmail) {
+      res.status(400).json({ error: "Invalid Email" });
+    }
+    const user = await User.findOne({ email: email });
+    if (user) {
+      res.status(400).json({ error: "Email already registered" });
+    }
+
+    res.status(201).json({ message: "This is email is available" });
   } catch (err) {
     console.log(err);
   }
@@ -128,12 +161,39 @@ router.get("/requests", authenticateToken, async (req, res) => {
   }
 });
 
+router.post("/request", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.body;
+    const prayerRequest = await Request.findOne({ _id: id });
+
+    res.status(201).json({ prayerRequest });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.post("/update-request", authenticateToken, async (req, res) => {
+  try {
+    const { prayer_request, id } = req.body;
+    console.log(id);
+    console.log(prayer_request);
+    const updatedRequest = await Request.updateOne(
+      { _id: id },
+      { $set: { prayer_request: prayer_request } }
+    );
+    console.log(updatedRequest);
+    res.status(201).json({ message: "Prayer Request Updated Successfully" });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 router.post("/send-code", async (req, res) => {
   const { phone_number } = req.body;
   try {
     const status = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
-      .verifications.create({ to: `+${phone_number}`, channel: "sms" });
+      .verifications.create({ to: `+91${phone_number}`, channel: "sms" });
 
     if (status) {
       res
@@ -150,16 +210,40 @@ router.post("/verify-code", async (req, res) => {
   try {
     const status = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
-      .verificationChecks.create({ to: `+${phone_number}`, code });
+      .verificationChecks.create({ to: `+91${phone_number}`, code });
 
     if (status.status === "approved") {
       res.status(201).json({ message: "Verification successfull" });
     } else {
-      res.status(401).json({ error: "Incorrect OTP!" });
+      res.status(404).json({ error: "Incorrect OTP!" });
     }
   } catch (error) {
     console.log(error);
   }
+});
+
+router.get("/all-requests", async (req, res) => {
+  try {
+    const prayerRequests = await Request.find();
+    console.log(prayerRequests);
+    if (!prayerRequests) {
+      res.status(400).json({ error: "No prayer requests found" });
+    }
+
+    res.status(201).json(prayerRequests);
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.post("/delete-request", authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.body;
+    const itemDeleted = await Request.deleteOne({ _id: id });
+    if (itemDeleted) {
+      res.status(201).json({ message: "Prayer Request Deleted Successfully" });
+    }
+  } catch (error) {}
 });
 
 module.exports = router;

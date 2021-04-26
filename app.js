@@ -1,6 +1,9 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const cors = require("cors");
 const app = express();
+
+app.use(cors());
 
 //Db connection
 require("./db/conn");
@@ -12,7 +15,6 @@ app.use(require("./routes/auth"));
 
 //Middleware
 const middleware = (req, res, next) => {
-  console.log("Hello from Middleware");
   next();
 };
 
