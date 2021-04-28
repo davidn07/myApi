@@ -154,7 +154,7 @@ router.get("/requests", authenticateToken, async (req, res) => {
   try {
     const prayerRequests = await Request.find({ user_id: req.user._id });
     if (prayerRequests.length < 1)
-      res.status(401).json({ message: "No prayer requests found" });
+      res.status(400).json({ message: "No prayer requests found" });
 
     res.status(201).json({ prayerRequests });
   } catch (err) {
@@ -224,7 +224,7 @@ router.post("/verify-code", async (req, res) => {
 router.get("/all-requests", async (req, res) => {
   try {
     const prayerRequests = await Request.find();
-    if (!prayerRequests) {
+    if (prayerRequests.length === 0) {
       res.status(400).json({ error: "No prayer requests found" });
     }
 
