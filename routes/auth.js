@@ -22,7 +22,7 @@ router.get("/", (req, res) => {
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
   const token = authHeader && authHeader.split(" ")[1];
-  if (!token) res.status(401).json({ rror: "Not authorised" });
+  if (!token) res.status(401).json({ error: "Not authorised" });
 
   jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
     req.user = user;
@@ -74,7 +74,6 @@ router.post("/login", async (req, res) => {
     if (!user) {
       res.status(400).json({ error: "User does not exist" });
     }
-    console.log(user);
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
@@ -83,7 +82,9 @@ router.post("/login", async (req, res) => {
 
     const token = jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
 
-    res.status(201).json({ token, message: "User LogIn Successful" });
+    res
+      .status(201)
+      .json({ token, message: "User LogIn Successful", user: user });
   } catch (error) {
     console.log(error);
   }
@@ -175,13 +176,10 @@ router.post("/request", authenticateToken, async (req, res) => {
 router.post("/update-request", authenticateToken, async (req, res) => {
   try {
     const { prayer_request, id } = req.body;
-    console.log(id);
-    console.log(prayer_request);
     const updatedRequest = await Request.updateOne(
       { _id: id },
       { $set: { prayer_request: prayer_request } }
     );
-    console.log(updatedRequest);
     res.status(201).json({ message: "Prayer Request Updated Successfully" });
   } catch (err) {
     console.log(err);
@@ -215,17 +213,17 @@ router.post("/verify-code", async (req, res) => {
     if (status.status === "approved") {
       res.status(201).json({ message: "Verification successfull" });
     } else {
-      res.status(404).json({ error: "Incorrect OTP!" });
+      res.status(400).json({ error: "Incorrect OTP!" });
     }
   } catch (error) {
     console.log(error);
+    res.status(400).send(error);
   }
 });
 
 router.get("/all-requests", async (req, res) => {
   try {
     const prayerRequests = await Request.find();
-    console.log(prayerRequests);
     if (!prayerRequests) {
       res.status(400).json({ error: "No prayer requests found" });
     }
