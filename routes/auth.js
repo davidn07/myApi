@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
+const { OAuth2Client } = require("google-auth-library");
 const router = express.Router();
 
 dotenv.config();
@@ -9,6 +10,7 @@ dotenv.config();
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT);
 
 require("../db/conn");
 const User = require("../model/userSchema");
@@ -242,6 +244,62 @@ router.post("/delete-request", authenticateToken, async (req, res) => {
       res.status(201).json({ message: "Prayer Request Deleted Successfully" });
     }
   } catch (error) {}
+});
+
+router.post("/google-register", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const result = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT,
+    });
+    const { given_name, family_name, email } = result.payload;
+
+    const userExist = await User.findOne({ email: email });
+
+    if (userExist) {
+      return res.status(400).json({ error: "User already exists" });
+    }
+
+    const hashedPassword = await bcrypt.hash(email, 10);
+
+    const user = new User({
+      first_name: given_name,
+      last_name: family_name,
+      email,
+      password: hashedPassword,
+    });
+
+    await user.save();
+
+    res.status(201).json({ message: "User Registered Successfully" });
+  } catch (error) {
+    console.log(error);
+  }
+});
+
+router.post("/google-login", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const result = await googleClient.verifyIdToken({
+      idToken,
+      audience: process.env.GOOGLE_CLIENT,
+    });
+    const { email } = result.payload;
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      res.status(400).json({ error: "User does not exist" });
+    }
+
+    const token = jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
+
+    res
+      .status(201)
+      .json({ token, message: "User LogIn Successful", user: user });
+  } catch (error) {
+    console.log(error);
+  }
 });
 
 module.exports = router;
