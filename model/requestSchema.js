@@ -21,7 +21,6 @@ const requestSchema = new mongoose.Schema({
   },
   phone_number: {
     type: Number,
-    required: true,
   },
   user_id: {
     type: String,
