@@ -292,6 +292,13 @@ router.post("/google-login", async (req, res) => {
       res.status(400).json({ error: "User does not exist" });
     }
 
+    await User.updateOne(
+      { email: email },
+      {
+        $set: { profile_img: result.payload.picture },
+      }
+    );
+
     const token = jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
 
     res
