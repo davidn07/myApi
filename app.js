@@ -1,6 +1,6 @@
 const express = require("express");
-const mongoose = require("mongoose");
 const cors = require("cors");
+const compression = require("compression");
 const app = express();
 
 app.use(cors());
@@ -8,6 +8,7 @@ app.use(cors());
 //Db connection
 require("./db/conn");
 app.use(express.json());
+app.use(compression());
 
 const PORT = process.env.PORT || 5000;
 

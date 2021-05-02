@@ -3,6 +3,8 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const { OAuth2Client } = require("google-auth-library");
+const nodemailer = require("nodemailer");
+const { google } = require("googleapis");
 const router = express.Router();
 
 dotenv.config();
@@ -11,6 +13,12 @@ const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
 const client = require("twilio")(accountSid, authToken);
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT);
+const gmailClient = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT,
+  process.env.CLIENT_SECRET,
+  process.env.REDIRECT_URI
+);
+gmailClient.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 
 require("../db/conn");
 const User = require("../model/userSchema");
@@ -82,7 +90,9 @@ router.post("/login", async (req, res) => {
       res.status(401).json({ error: "password does not match" });
     }
 
-    const token = jwt.sign(JSON.stringify(user), process.env.TOKEN_SECRET);
+    const token = jwt.sign({ user }, process.env.TOKEN_SECRET, {
+      expiresIn: "3d",
+    });
 
     res
       .status(201)
@@ -272,6 +282,32 @@ router.post("/google-register", async (req, res) => {
 
     await user.save();
 
+    const accessToken = await gmailClient.getAccessToken();
+
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        type: "OAuth2",
+        user: "nirmaldavid96@gmail.com",
+        clientId: process.env.GOOGLE_CLIENT,
+        clientSecret: process.env.CLIENT_SECRET,
+        refreshToken: process.env.REFRESH_TOKEN,
+        accessToken: accessToken,
+      },
+    });
+
+    const mailOptions = {
+      from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
+      to: email,
+      subject: "Welcome to Prayer Request App",
+      text: "Welcome to Prayer Request App",
+      html: `<h4>Welcome to Prayer Request App</h4><br>
+      <p>Praise the Lord,<br>You have successfully registered to the Prayer Request App. Go ahead and login to your account.<br> Post your prayer requests and Prayer for others</p><br>
+      <h4>Happy Praying</h4>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
     res.status(201).json({ message: "User Registered Successfully" });
   } catch (error) {
     console.log(error);
@@ -289,7 +325,9 @@ router.post("/google-login", async (req, res) => {
 
     const user = await User.findOne({ email: email });
     if (!user) {
-      res.status(400).json({ error: "User does not exist" });
+      res
+        .status(400)
+        .json({ error: "Don't have a account ! Go ahead and Sign Up !" });
     }
 
     await User.updateOne(
@@ -306,6 +344,78 @@ router.post("/google-login", async (req, res) => {
       .json({ token, message: "User LogIn Successful", user: user });
   } catch (error) {
     console.log(error);
+  }
+});
+
+router.post("/forgot-password", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      res.status(400).json({ error: "User does not exist" });
+    }
+
+    const token = jwt.sign({ user }, process.env.TOKEN_SECRET, {
+      expiresIn: "15m",
+    });
+    const accessToken = await gmailClient.getAccessToken();
+
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        type: "OAuth2",
+        user: "nirmaldavid96@gmail.com",
+        clientId: process.env.GOOGLE_CLIENT,
+        clientSecret: process.env.CLIENT_SECRET,
+        refreshToken: process.env.REFRESH_TOKEN,
+        accessToken: accessToken,
+      },
+    });
+    const link = `http://localhost:3001/reset-password/?email=${user.email}&token=${token}`;
+
+    const mailOptions = {
+      from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
+      to: email,
+      subject: "Forgot Password Link",
+      text: link,
+      html: `<h6>Please click on the the following button to reset password</h6><br>
+      <a href=${link}><button>Reset Password</button></a>`,
+    };
+
+    const mailSent = await transporter.sendMail(mailOptions);
+    res.status(201).json({
+      message:
+        "An email with reset password link is sent to your registered email",
+      token,
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+router.post("/reset-password", async (req, res) => {
+  try {
+    const { email, token, password } = req.body;
+
+    const valid = jwt.verify(token, process.env.TOKEN_SECRET);
+
+    const user = await User.findOne({ email: email });
+    if (!user) {
+      res.status(400).json({ error: "User does not exist" });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    await User.updateOne(
+      { email: email },
+      { $set: { password: hashedPassword } }
+    );
+
+    res.status(201).json({ message: "Password Updated successfully" });
+  } catch (err) {
+    console.log(err.message);
+    res.status(400).json({ error: err.message });
   }
 });
 
