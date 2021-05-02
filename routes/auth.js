@@ -372,7 +372,7 @@ router.post("/forgot-password", async (req, res) => {
         accessToken: accessToken,
       },
     });
-    const link = `http://localhost:3001/reset-password/?email=${user.email}&token=${token}`;
+    const link = `http://prayer-request-app.vercel.app/reset-password/?email=${user.email}&token=${token}`;
 
     const mailOptions = {
       from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
