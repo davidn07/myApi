@@ -47,8 +47,6 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-router.use(authenticateToken);
-
 router.post("/register", async (req, res) => {
   const {
     first_name,
@@ -212,8 +210,9 @@ router.post("/verify-user", async (req, res) => {
 router.get("/requests", authenticateToken, async (req, res) => {
   try {
     const prayerRequests = await Request.find({ user_id: req.user.user._id });
-    if (prayerRequests.length < 1)
-      res.status(400).json({ message: "No prayer requests found" });
+    if (prayerRequests.length < 1) {
+      return res.status(400).json({ message: "No prayer requests found" });
+    }
 
     res.status(201).json({ prayerRequests });
   } catch (err) {
