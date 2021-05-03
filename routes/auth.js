@@ -75,6 +75,32 @@ router.post("/register", async (req, res) => {
 
     await user.save();
 
+    const accessToken = await gmailClient.getAccessToken();
+
+    const transporter = nodemailer.createTransport({
+      service: "Gmail",
+      auth: {
+        type: "OAuth2",
+        user: "nirmaldavid96@gmail.com",
+        clientId: process.env.GOOGLE_CLIENT,
+        clientSecret: process.env.CLIENT_SECRET,
+        refreshToken: process.env.REFRESH_TOKEN,
+        accessToken: accessToken,
+      },
+    });
+
+    const mailOptions = {
+      from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
+      to: email,
+      subject: "Welcome to Prayer Request App",
+      text: "Welcome to Prayer Request App",
+      html: `<h4>Welcome to Prayer Request App</h4><br>
+      <p>Praise the Lord,<br>You have successfully registered to the Prayer Request App. Go ahead and login to your account.<br> Post your prayer requests and Prayer for others</p><br>
+      <h4>Happy Praying</h4>`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
     res.status(201).json({ message: "User Registered Successfully" });
   } catch (err) {
     console.log(err);
