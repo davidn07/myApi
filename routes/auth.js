@@ -137,23 +137,24 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/requests", authenticateToken, async (req, res) => {
-  const { prayer_request, created_at } = req.body;
-  console.log(req.user, "Add Prayer Request");
-
-  if (!prayer_request) {
-    return res.status(422).json({ error: "Please fill all the fields" });
-  }
-
   try {
+    const { prayer_request, created_at } = req.body;
+    const { user } = req;
+
+    if (!prayer_request) {
+      return res.status(422).json({ error: "Please fill all the fields" });
+    }
     const request = new Request({
       prayer_request,
       created_at,
-      first_name: req.user.first_name,
-      last_name: req.user.last_name,
-      phone_number: req.user.phone_number,
-      user_id: req.user._id,
-      gender: req.user.gender,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      phone_number: user.phone_number,
+      user_id: user._id,
+      gender: user.gender,
     });
+
+    console.log(request, "Prayer Request");
 
     const prayerRequest = await request.save();
 
