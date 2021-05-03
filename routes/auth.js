@@ -42,7 +42,14 @@ const authenticateToken = (req, res, next) => {
 };
 
 router.post("/register", async (req, res) => {
-  const { first_name, last_name, email, phone_number, password } = req.body;
+  const {
+    first_name,
+    last_name,
+    email,
+    phone_number,
+    password,
+    gender,
+  } = req.body;
 
   if (!first_name || !last_name || !email || !phone_number || !password) {
     return res.json({ error: "Please fill all the fields" });
@@ -63,6 +70,7 @@ router.post("/register", async (req, res) => {
       email,
       phone_number,
       password: hashedPassword,
+      gender,
     });
 
     await user.save();
@@ -103,7 +111,7 @@ router.post("/login", async (req, res) => {
 });
 
 router.post("/requests", authenticateToken, async (req, res) => {
-  const { prayer_request } = req.body;
+  const { prayer_request, created_at } = req.body;
 
   if (!prayer_request) {
     return res.status(422).json({ error: "Please fill all the fields" });
@@ -112,10 +120,12 @@ router.post("/requests", authenticateToken, async (req, res) => {
   try {
     const request = new Request({
       prayer_request,
+      created_at,
       first_name: req.user.first_name,
       last_name: req.user.last_name,
       phone_number: req.user.phone_number,
       user_id: req.user._id,
+      gender: req.user.gender,
     });
 
     const prayerRequest = await request.save();
@@ -203,7 +213,7 @@ router.post("/send-code", async (req, res) => {
   try {
     const status = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
-      .verifications.create({ to: `+91${phone_number}`, channel: "sms" });
+      .verifications.create({ to: `+${phone_number}`, channel: "sms" });
 
     if (status) {
       res
@@ -220,7 +230,7 @@ router.post("/verify-code", async (req, res) => {
   try {
     const status = await client.verify
       .services(process.env.TWILIO_SERVICE_SID)
-      .verificationChecks.create({ to: `+91${phone_number}`, code });
+      .verificationChecks.create({ to: `+${phone_number}`, code });
 
     if (status.status === "approved") {
       res.status(201).json({ message: "Verification successfull" });

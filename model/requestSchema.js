@@ -7,9 +7,8 @@ const requestSchema = new mongoose.Schema({
     required: true,
     expires: 604800,
   },
-  date: {
+  created_at: {
     type: Date,
-    default: Date.now(),
   },
   first_name: {
     type: String,
@@ -25,6 +24,9 @@ const requestSchema = new mongoose.Schema({
   user_id: {
     type: String,
     required: true,
+  },
+  gender: {
+    type: String,
   },
 });
 

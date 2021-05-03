@@ -23,6 +23,9 @@ const userSchema = new mongoose.Schema({
   profile_img: {
     type: String,
   },
+  gender: {
+    type: String,
+  },
 });
 
 //Create model (collectionName, scema)
