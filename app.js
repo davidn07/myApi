@@ -14,11 +14,6 @@ const PORT = process.env.PORT || 5000;
 
 app.use(require("./routes/auth"));
 
-//Middleware
-const middleware = (req, res, next) => {
-  next();
-};
-
 app.listen(PORT, () => {
   console.log(`listening to port ${PORT}`);
 });

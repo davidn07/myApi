@@ -31,15 +31,23 @@ router.get("/", (req, res) => {
 //middleware
 const authenticateToken = (req, res, next) => {
   const authHeader = req.headers["authorization"];
-  const token = authHeader && authHeader.split(" ")[1];
-  if (!token) res.status(401).json({ error: "Not authorised" });
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
 
-  jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-    req.user = user;
-
-    next();
-  });
+    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
+      if (err) {
+        return res.sendStatus(403);
+      }
+      console.log(user, "token");
+      req.user = user;
+      next();
+    });
+  } else {
+    res.sendStatus(401);
+  }
 };
+
+router.use(authenticateToken);
 
 router.post("/register", async (req, res) => {
   const {
@@ -139,12 +147,12 @@ router.post("/login", async (req, res) => {
 router.post("/requests", authenticateToken, async (req, res) => {
   try {
     const { prayer_request, created_at } = req.body;
-    const { user } = req;
-    console.log(user, "User Details");
 
     if (!prayer_request) {
       return res.status(422).json({ error: "Please fill all the fields" });
     }
+    const user = await User.findOne({ _id: req.user.user._id });
+
     const request = new Request({
       prayer_request,
       created_at,
@@ -169,9 +177,9 @@ router.post("/requests", authenticateToken, async (req, res) => {
 
 router.get("/get-user", authenticateToken, async (req, res) => {
   try {
-    const user = await User.findOne({ _id: req.user._id });
+    const user = await User.findOne({ _id: req.user.user._id });
     if (!user) {
-      res.status(400).json({ error: "User not found" });
+      return res.status(400).json({ error: "User not found" });
     }
 
     res.status(201).json({ user: user });
@@ -203,7 +211,7 @@ router.post("/verify-user", async (req, res) => {
 
 router.get("/requests", authenticateToken, async (req, res) => {
   try {
-    const prayerRequests = await Request.find({ user_id: req.user._id });
+    const prayerRequests = await Request.find({ user_id: req.user.user._id });
     if (prayerRequests.length < 1)
       res.status(400).json({ message: "No prayer requests found" });
 
