@@ -138,6 +138,7 @@ router.post("/login", async (req, res) => {
 
 router.post("/requests", authenticateToken, async (req, res) => {
   const { prayer_request, created_at } = req.body;
+  console.log(req.user, "Add Prayer Request");
 
   if (!prayer_request) {
     return res.status(422).json({ error: "Please fill all the fields" });
