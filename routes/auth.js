@@ -3,8 +3,9 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const dotenv = require("dotenv");
 const { OAuth2Client } = require("google-auth-library");
-const nodemailer = require("nodemailer");
 const { google } = require("googleapis");
+const schedule = require("node-schedule");
+const _ = require("lodash");
 const router = express.Router();
 
 dotenv.config();
@@ -23,9 +24,43 @@ gmailClient.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 require("../db/conn");
 const User = require("../model/userSchema");
 const Request = require("../model/requestSchema");
+const auth = require("../controller/auth");
 
 router.get("/", (req, res) => {
   res.send("Hello world from router js");
+});
+
+//Email Schedule
+schedule.scheduleJob("* 0 7 * * *", async () => {
+  // const users = await User.find();
+  // console.log(_.map(users, "email"), "users");
+
+  // const accessToken = await gmailClient.getAccessToken();
+  // const transporter = nodemailer.createTransport({
+  //   service: "Gmail",
+  //   auth: {
+  //     type: "OAuth2",
+  //     user: "nirmaldavid96@gmail.com",
+  //     clientId: process.env.GOOGLE_CLIENT,
+  //     clientSecret: process.env.CLIENT_SECRET,
+  //     refreshToken: process.env.REFRESH_TOKEN,
+  //     accessToken: accessToken,
+  //   },
+  // });
+
+  // const mailOptions = {
+  //   from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
+  //   to: "nirmaldavid96@gmail.com",
+  //   subject: "Welcome to Prayer Request App",
+  //   text: "Welcome to Prayer Request App",
+  //   html: `<h4>Welcome to Prayer Request App</h4><br>
+  //   <p>Praise the Lord,<br>You have successfully registered to the Prayer Request App. Go ahead and login to your account.<br> Post your prayer requests and Prayer for others</p><br>
+  //   <h4>Happy Praying</h4>`,
+  // };
+
+  // await transporter.sendMail(mailOptions);
+
+  console.log("Sent");
 });
 
 //middleware
@@ -47,71 +82,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-router.post("/register", async (req, res) => {
-  const {
-    first_name,
-    last_name,
-    email,
-    phone_number,
-    password,
-    gender,
-  } = req.body;
-
-  if (!first_name || !last_name || !email || !phone_number || !password) {
-    return res.json({ error: "Please fill all the fields" });
-  }
-
-  try {
-    const userExist = await User.findOne({ email: email });
-
-    if (userExist) {
-      return res.status(400).json({ error: "User already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    const user = new User({
-      first_name,
-      last_name,
-      email,
-      phone_number,
-      password: hashedPassword,
-      gender,
-    });
-
-    await user.save();
-
-    const accessToken = await gmailClient.getAccessToken();
-
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        type: "OAuth2",
-        user: "nirmaldavid96@gmail.com",
-        clientId: process.env.GOOGLE_CLIENT,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken,
-      },
-    });
-
-    const mailOptions = {
-      from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
-      to: email,
-      subject: "Welcome to Prayer Request App",
-      text: "Welcome to Prayer Request App",
-      html: `<h4>Welcome to Prayer Request App</h4><br>
-      <p>Praise the Lord,<br>You have successfully registered to the Prayer Request App. Go ahead and login to your account.<br> Post your prayer requests and Prayer for others</p><br>
-      <h4>Happy Praying</h4>`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.status(201).json({ message: "User Registered Successfully" });
-  } catch (err) {
-    console.log(err);
-  }
-});
+router.post("/register", auth.register);
 
 router.post("/login", async (req, res) => {
   try {
@@ -283,7 +254,7 @@ router.get("/all-requests", async (req, res) => {
   try {
     const prayerRequests = await Request.find();
     if (prayerRequests.length === 0) {
-      res.status(400).json({ error: "No prayer requests found" });
+      return res.status(400).json({ error: "No prayer requests found" });
     }
 
     res.status(201).json(prayerRequests);
