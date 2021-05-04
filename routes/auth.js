@@ -23,8 +23,15 @@ gmailClient.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 
 require("../db/conn");
 const User = require("../model/userSchema");
-const Request = require("../model/requestSchema");
-const auth = require("../controller/auth");
+const {
+  register,
+  login,
+  verifyUser,
+  sendCode,
+  verifyCode,
+  forgotPassword,
+  resetPassword,
+} = require("../controller/auth");
 
 router.get("/", (req, res) => {
   res.send("Hello world from router js");
@@ -63,175 +70,15 @@ schedule.scheduleJob("* 0 7 * * *", async () => {
   console.log("Sent");
 });
 
-//middleware
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers["authorization"];
-  if (authHeader) {
-    const token = authHeader.split(" ")[1];
+router.post("/register", register);
 
-    jwt.verify(token, process.env.TOKEN_SECRET, (err, user) => {
-      if (err) {
-        return res.sendStatus(403);
-      }
-      console.log(user, "token");
-      req.user = user;
-      next();
-    });
-  } else {
-    res.sendStatus(401);
-  }
-};
+router.post("/login", login);
 
-router.post("/register", auth.register);
+router.post("/verify-user", verifyUser);
 
-router.post("/login", auth.login);
+router.post("/send-code", sendCode);
 
-router.post("/requests", authenticateToken, async (req, res) => {
-  try {
-    const { prayer_request, created_at } = req.body;
-
-    if (!prayer_request) {
-      return res.status(422).json({ error: "Please fill all the fields" });
-    }
-    const user = await User.findOne({ _id: req.user.user._id });
-
-    const request = new Request({
-      prayer_request,
-      created_at,
-      first_name: user.first_name,
-      last_name: user.last_name,
-      phone_number: user.phone_number,
-      user_id: user._id,
-      gender: user.gender,
-    });
-
-    console.log(request, "Prayer Request");
-
-    const prayerRequest = await request.save();
-
-    res
-      .status(201)
-      .json({ message: "Prayer request added successfully", prayerRequest });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.get("/get-user", authenticateToken, async (req, res) => {
-  try {
-    const user = await User.findOne({ _id: req.user.user._id });
-    if (!user) {
-      return res.status(400).json({ error: "User not found" });
-    }
-
-    res.status(201).json({ user: user });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.post("/verify-user", async (req, res) => {
-  try {
-    const { email } = req.body;
-    const emailRegexp = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-
-    const isEmail = emailRegexp.test(email);
-
-    if (!isEmail) {
-      res.status(400).json({ error: "Invalid Email" });
-    }
-    const user = await User.findOne({ email: email });
-    if (user) {
-      res.status(400).json({ error: "Email already registered" });
-    }
-
-    res.status(201).json({ message: "This is email is available" });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.get("/requests", authenticateToken, async (req, res) => {
-  try {
-    const prayerRequests = await Request.find({ user_id: req.user.user._id });
-    if (prayerRequests.length < 1) {
-      return res.status(400).json({ message: "No prayer requests found" });
-    }
-
-    res.status(201).json({ prayerRequests });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.post("/request", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.body;
-    const prayerRequest = await Request.findOne({ _id: id });
-
-    res.status(201).json({ prayerRequest });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.post("/update-request", authenticateToken, async (req, res) => {
-  try {
-    const { prayer_request, id } = req.body;
-    const updatedRequest = await Request.updateOne(
-      { _id: id },
-      { $set: { prayer_request: prayer_request } }
-    );
-    res.status(201).json({ message: "Prayer Request Updated Successfully" });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.post("/send-code", async (req, res) => {
-  const { phone_number } = req.body;
-  try {
-    const status = await client.verify
-      .services(process.env.TWILIO_SERVICE_SID)
-      .verifications.create({ to: `+${phone_number}`, channel: "sms" });
-
-    if (status) {
-      res
-        .status(201)
-        .json({ message: "OTP sent to the mobile number successfully!" });
-    }
-  } catch (error) {
-    console.log(error);
-  }
-});
-
-router.post("/verify-code", async (req, res) => {
-  const { phone_number, code } = req.body;
-  try {
-    const status = await client.verify
-      .services(process.env.TWILIO_SERVICE_SID)
-      .verificationChecks.create({ to: `+${phone_number}`, code });
-
-    if (status.status === "approved") {
-      res.status(201).json({ message: "Verification successfull" });
-    } else {
-      res.status(400).json({ error: "Incorrect OTP!" });
-    }
-  } catch (error) {
-    console.log(error);
-    res.status(400).send(error);
-  }
-});
-
-router.post("/delete-request", authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.body;
-    const itemDeleted = await Request.deleteOne({ _id: id });
-    if (itemDeleted) {
-      res.status(201).json({ message: "Prayer Request Deleted Successfully" });
-    }
-  } catch (error) {}
-});
+router.post("/verify-code", verifyCode);
 
 router.post("/google-register", async (req, res) => {
   try {
@@ -324,76 +171,8 @@ router.post("/google-login", async (req, res) => {
   }
 });
 
-router.post("/forgot-password", async (req, res) => {
-  try {
-    const { email } = req.body;
+router.post("/forgot-password", forgotPassword);
 
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      res.status(400).json({ error: "User does not exist" });
-    }
-
-    const token = jwt.sign({ user }, process.env.TOKEN_SECRET, {
-      expiresIn: "15m",
-    });
-    const accessToken = await gmailClient.getAccessToken();
-
-    const transporter = nodemailer.createTransport({
-      service: "Gmail",
-      auth: {
-        type: "OAuth2",
-        user: "nirmaldavid96@gmail.com",
-        clientId: process.env.GOOGLE_CLIENT,
-        clientSecret: process.env.CLIENT_SECRET,
-        refreshToken: process.env.REFRESH_TOKEN,
-        accessToken: accessToken,
-      },
-    });
-    const link = `http://prayer-request-app.vercel.app/reset-password/?email=${user.email}&token=${token}`;
-
-    const mailOptions = {
-      from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
-      to: email,
-      subject: "Forgot Password Link",
-      text: link,
-      html: `<h6>Please click on the the following button to reset password</h6><br>
-      <a href=${link}><button>Reset Password</button></a>`,
-    };
-
-    const mailSent = await transporter.sendMail(mailOptions);
-    res.status(201).json({
-      message:
-        "An email with reset password link is sent to your registered email",
-      token,
-    });
-  } catch (err) {
-    console.log(err);
-  }
-});
-
-router.post("/reset-password", async (req, res) => {
-  try {
-    const { email, token, password } = req.body;
-
-    const valid = jwt.verify(token, process.env.TOKEN_SECRET);
-
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      res.status(400).json({ error: "User does not exist" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await User.updateOne(
-      { email: email },
-      { $set: { password: hashedPassword } }
-    );
-
-    res.status(201).json({ message: "Password Updated successfully" });
-  } catch (err) {
-    console.log(err.message);
-    res.status(400).json({ error: err.message });
-  }
-});
+router.post("/reset-password", resetPassword);
 
 module.exports = router;
