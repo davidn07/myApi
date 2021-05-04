@@ -84,34 +84,7 @@ const authenticateToken = (req, res, next) => {
 
 router.post("/register", auth.register);
 
-router.post("/login", async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    if (!email || !password) {
-      res.status(400).json({ error: "Please fill the data" });
-    }
-
-    const user = await User.findOne({ email: email });
-    if (!user) {
-      res.status(400).json({ error: "User does not exist" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      res.status(401).json({ error: "password does not match" });
-    }
-
-    const token = jwt.sign({ user }, process.env.TOKEN_SECRET, {
-      expiresIn: "3d",
-    });
-
-    res
-      .status(201)
-      .json({ token, message: "User LogIn Successful", user: user });
-  } catch (error) {
-    console.log(error);
-  }
-});
+router.post("/login", auth.login);
 
 router.post("/requests", authenticateToken, async (req, res) => {
   try {
