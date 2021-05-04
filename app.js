@@ -13,6 +13,7 @@ app.use(compression());
 const PORT = process.env.PORT || 5000;
 
 app.use(require("./routes/auth"));
+app.use(require("./routes/getAllRequests"));
 
 app.listen(PORT, () => {
   console.log(`listening to port ${PORT}`);

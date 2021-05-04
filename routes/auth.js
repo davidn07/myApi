@@ -223,19 +223,6 @@ router.post("/verify-code", async (req, res) => {
   }
 });
 
-router.get("/all-requests", async (req, res) => {
-  try {
-    const prayerRequests = await Request.find();
-    if (prayerRequests.length === 0) {
-      return res.status(400).json({ error: "No prayer requests found" });
-    }
-
-    res.status(201).json(prayerRequests);
-  } catch (err) {
-    console.log(err);
-  }
-});
-
 router.post("/delete-request", authenticateToken, async (req, res) => {
   try {
     const { id } = req.body;
