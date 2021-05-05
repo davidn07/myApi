@@ -220,7 +220,7 @@ exports.registerEmail = async (email) => {
                           <td>
                             <a
                               data-click-track-id="37"
-                              href="https://prayer-request-app.vercel.app/"
+                              href="https://prayer-request-app.com/"
                               style="
                                 margin-top: 36px;
                                 -ms-text-size-adjust: 100%;
@@ -395,7 +395,7 @@ exports.forgotPasswordEmail = async (user, token) => {
       accessToken: accessToken,
     },
   });
-  const link = `http://prayer-request-app.vercel.app/reset-password/?email=${user.email}&token=${token}`;
+  const link = `https://prayer-request-app.com/reset-password/?email=${user.email}&token=${token}`;
 
   const mailOptions = {
     from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
