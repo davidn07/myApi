@@ -1,5 +1,5 @@
 const User = require("../model/userSchema");
-const passwordHash = require("../helper/passwordHash");
+const { passwordHash } = require("../helper/passwordHash");
 const { registerEmail, forgotPasswordEmail } = require("../helper/emails");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
@@ -29,7 +29,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: "User already exists" });
     }
 
-    const hashedPassword = await passwordHash.passwordHash(password);
+    const hashedPassword = await passwordHash(password);
 
     const user = new User({
       first_name,
