@@ -23,6 +23,8 @@ gmailClient.setCredentials({ refresh_token: process.env.REFRESH_TOKEN });
 
 require("../db/conn");
 const User = require("../model/userSchema");
+const Location = require("../model/locationSchema");
+
 const {
   register,
   login,
@@ -31,6 +33,8 @@ const {
   verifyCode,
   forgotPassword,
   resetPassword,
+  addLocation,
+  getLocation,
 } = require("../controller/auth");
 
 router.get("/", (req, res) => {
@@ -174,5 +178,9 @@ router.post("/google-login", async (req, res) => {
 router.post("/forgot-password", forgotPassword);
 
 router.post("/reset-password", resetPassword);
+
+router.post("/add-location", addLocation);
+
+router.get("/get-location", getLocation);
 
 module.exports = router;

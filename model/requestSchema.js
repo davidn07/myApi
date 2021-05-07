@@ -28,6 +28,9 @@ const requestSchema = new mongoose.Schema({
   gender: {
     type: String,
   },
+  likes: {
+    type: Array,
+  },
 });
 
 //Create model (collectionName, schema)

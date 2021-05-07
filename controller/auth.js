@@ -1,8 +1,10 @@
 const User = require("../model/userSchema");
+const Location = require("../model/locationSchema");
 const { passwordHash } = require("../helper/passwordHash");
 const { registerEmail, forgotPasswordEmail } = require("../helper/emails");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
+const _ = require("lodash");
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID;
 const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -16,6 +18,8 @@ exports.register = async (req, res) => {
     phone_number,
     password,
     gender,
+    state,
+    city,
   } = req.body;
 
   if (!first_name || !last_name || !email || !phone_number || !password) {
@@ -38,6 +42,8 @@ exports.register = async (req, res) => {
       phone_number,
       password: hashedPassword,
       gender,
+      state,
+      city,
     });
 
     await user.save();
@@ -178,5 +184,37 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     console.log(err.message);
     res.status(400).json({ error: err.message });
+  }
+};
+
+exports.addLocation = async (req, res) => {
+  try {
+    console.log(req.body);
+    const { locations } = req.body;
+    _.map(locations, async (item) => {
+      const exist = Location.findOne({ name: item.name });
+      if (exist) {
+        console.log("location already present");
+      }
+
+      const location = new Location(item);
+      await location.save();
+      console.log("location saved");
+    });
+  } catch (error) {
+    console.log(error);
+  }
+};
+
+exports.getLocation = async (req, res) => {
+  try {
+    const locations = await Location.find();
+    if (!locations) {
+      res.status(401).json({ error: "Something wen wrong" });
+    }
+
+    res.status(201).json({ locations });
+  } catch (error) {
+    console.log(error);
   }
 };

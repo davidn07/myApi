@@ -1,5 +1,6 @@
 const Request = require("../model/requestSchema");
 const User = require("../model/userSchema");
+const _ = require("lodash");
 
 exports.addRequest = async (req, res) => {
   try {
@@ -75,4 +76,32 @@ exports.deleteRequest = async (req, res) => {
       res.status(201).json({ message: "Prayer Request Deleted Successfully" });
     }
   } catch (error) {}
+};
+
+exports.likeRequest = async (req, res) => {
+  try {
+    const { id } = req.body;
+    const request = await Request.findOne({ _id: id });
+    console.log(request.likes.length);
+    if (_.size(request.likes) === 0) {
+      console.log("ADD LIKE");
+      const currentRequest = await Request.updateOne(
+        { _id: id },
+        { $push: { likes: req.user.user._id } }
+      );
+      console.log(currentRequest);
+
+      return res.status(201).json({ message: "liked" });
+    } else if (!_.includes(request.likes, req.user.user._id)) {
+      console.log(" like");
+      const currentRequest = await Request.updateOne(
+        { _id: id },
+        { $push: { likes: req.user.user._id } }
+      );
+
+      return res.status(201).json({ message: "liked" });
+    }
+  } catch (error) {
+    console.log(error);
+  }
 };

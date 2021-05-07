@@ -7,6 +7,7 @@ const {
   getRequest,
   updateRequest,
   deleteRequest,
+  likeRequest,
 } = require("../controller/request");
 
 const { authenticateToken } = require("../middleware/authenticateToken");
@@ -22,5 +23,7 @@ router.post("/request", authenticateToken, getRequest);
 router.post("/update-request", authenticateToken, updateRequest);
 
 router.post("/delete-request", authenticateToken, deleteRequest);
+
+router.post("/like", authenticateToken, likeRequest);
 
 module.exports = router;

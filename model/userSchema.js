@@ -26,6 +26,12 @@ const userSchema = new mongoose.Schema({
   gender: {
     type: String,
   },
+  state: {
+    type: String,
+  },
+  city: {
+    type: String,
+  },
 });
 
 //Create model (collectionName, scema)
