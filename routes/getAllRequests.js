@@ -16,4 +16,28 @@ router.get("/all-requests", async (req, res) => {
   }
 });
 
+router.post("/add-mobile-request", async (req, res) => {
+  try {
+    const { first_name, last_name, prayer_request, city, state, created_at } =
+      req.body;
+    console.log(req.body);
+    const request = new Request({
+      first_name,
+      last_name,
+      prayer_request,
+      city,
+      state,
+      created_at,
+    });
+
+    const prayerRequest = await request.save();
+
+    res
+      .status(201)
+      .json({ message: "Prayer request added successfully", prayerRequest });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 module.exports = router;

@@ -92,11 +92,11 @@ exports.verifyUser = async (req, res) => {
     const isEmail = emailRegexp.test(email);
 
     if (!isEmail) {
-      res.status(400).json({ error: "Invalid Email" });
+      return res.status(400).json({ error: "Invalid Email" });
     }
     const user = await User.findOne({ email: email });
     if (user) {
-      res.status(400).json({ error: "Email already registered" });
+      return res.status(400).json({ error: "Email already registered" });
     }
 
     res.status(201).json({ message: "This is email is available" });

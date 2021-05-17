@@ -23,13 +23,18 @@ const requestSchema = new mongoose.Schema({
   },
   user_id: {
     type: String,
-    required: true,
   },
   gender: {
     type: String,
   },
   likes: {
     type: Array,
+  },
+  city: {
+    type: String,
+  },
+  state: {
+    type: String,
   },
 });
 
