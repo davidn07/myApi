@@ -82,18 +82,14 @@ exports.likeRequest = async (req, res) => {
   try {
     const { id } = req.body;
     const request = await Request.findOne({ _id: id });
-    console.log(request.likes.length);
     if (_.size(request.likes) === 0) {
-      console.log("ADD LIKE");
       const currentRequest = await Request.updateOne(
         { _id: id },
         { $push: { likes: req.user.user._id } }
       );
-      console.log(currentRequest);
 
       return res.status(201).json({ message: "liked" });
     } else if (!_.includes(request.likes, req.user.user._id)) {
-      console.log(" like");
       const currentRequest = await Request.updateOne(
         { _id: id },
         { $push: { likes: req.user.user._id } }

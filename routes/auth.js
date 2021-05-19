@@ -45,7 +45,6 @@ router.get("/", (req, res) => {
 schedule.scheduleJob("* 0 7 * * *", async () => {
   // const users = await User.find();
   // console.log(_.map(users, "email"), "users");
-
   // const accessToken = await gmailClient.getAccessToken();
   // const transporter = nodemailer.createTransport({
   //   service: "Gmail",
@@ -58,7 +57,6 @@ schedule.scheduleJob("* 0 7 * * *", async () => {
   //     accessToken: accessToken,
   //   },
   // });
-
   // const mailOptions = {
   //   from: "PRAYERREQUESTAPP 📧 <nirmaldavid96@gmail.com>",
   //   to: "nirmaldavid96@gmail.com",
@@ -68,10 +66,7 @@ schedule.scheduleJob("* 0 7 * * *", async () => {
   //   <p>Praise the Lord,<br>You have successfully registered to the Prayer Request App. Go ahead and login to your account.<br> Post your prayer requests and Prayer for others</p><br>
   //   <h4>Happy Praying</h4>`,
   // };
-
   // await transporter.sendMail(mailOptions);
-
-  console.log("Sent");
 });
 
 router.post("/register", register);
